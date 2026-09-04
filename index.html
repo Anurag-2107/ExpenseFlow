@@ -1,0 +1,2154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ExpenseFlow - Personal Expense Tracker</title>
+  <style>
+    :root {
+      --app-bg: #f5f7fb;
+      --card: #ffffff;
+      --text: #172033;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --primary: #4f46e5;
+      --primary-soft: #eef2ff;
+      --danger: #dc2626;
+      --success: #15803d;
+    }
+
+    body {
+      background: var(--app-bg);
+      color: var(--text);
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .app-shell {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 28px 15px 50px;
+    }
+
+    .app-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: 0 8px 30px rgba(0,0,0,.04);
+    }
+
+    .brand {
+      font-weight: 800;
+      letter-spacing: -.5px;
+    }
+
+    .brand span {
+      color: var(--primary);
+    }
+
+    .summary-card {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: #fff;
+      padding: 20px;
+      height: 100%;
+    }
+
+    .summary-label {
+      color: var(--muted);
+      font-size: .78rem;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      font-weight: 700;
+    }
+
+    .summary-value {
+      font-size: 1.65rem;
+      font-weight: 800;
+      margin-top: 4px;
+    }
+
+    .remaining-positive { color: var(--success); }
+    .remaining-negative { color: var(--danger); }
+
+    .section-title {
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .section-subtitle {
+      color: var(--muted);
+      font-size: .9rem;
+    }
+
+    .expense-row {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 13px 15px;
+      transition: .15s ease;
+    }
+
+    .expense-row:hover {
+      border-color: #c7c9d1;
+    }
+
+    .expense-row.spent {
+      background: var(--primary-soft);
+      border-color: #c7d2fe;
+    }
+
+    .expense-checkbox {
+      width: 21px;
+      height: 21px;
+      cursor: pointer;
+    }
+
+    .expense-name {
+      font-weight: 700;
+    }
+
+    .expense-meta {
+      color: var(--muted);
+      font-size: .78rem;
+    }
+
+    .amount {
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .category-badge {
+      background: #f3f4f6;
+      color: #4b5563;
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: .72rem;
+      font-weight: 700;
+    }
+
+    .progress {
+      height: 10px;
+      border-radius: 99px;
+      background: #e5e7eb;
+    }
+
+    .progress-bar {
+      background: var(--primary);
+    }
+
+    .nav-pills .nav-link {
+      color: #4b5563;
+      border-radius: 10px;
+      font-weight: 700;
+    }
+
+    .nav-pills .nav-link.active {
+      background: var(--primary);
+    }
+
+    .history-day {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+
+    .history-header {
+      background: #f9fafb;
+      padding: 12px 15px;
+      font-weight: 800;
+    }
+
+    .history-item {
+      padding: 11px 15px;
+      border-top: 1px solid var(--border);
+    }
+
+    .entity-row {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+    }
+
+    .entity-actions button {
+      min-width: 72px;
+    }
+
+    .empty-state {
+      border: 1px dashed #cbd5e1;
+      border-radius: 14px;
+      padding: 30px 15px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .modal-content {
+      border: 0;
+      border-radius: 18px;
+    }
+
+    .form-control, .form-select {
+      min-height: 44px;
+      border-radius: 10px;
+    }
+
+    .btn {
+      border-radius: 10px;
+      font-weight: 700;
+    }
+
+    .small-note {
+      color: var(--muted);
+      font-size: .78rem;
+    }
+
+
+    .money-positive { color: var(--success); }
+    .money-negative { color: var(--danger); }
+    .stat-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+    .calendar-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
+    .calendar-cell { min-height:70px; border:1px solid var(--border); border-radius:10px; padding:7px; background:#fff; }
+    .calendar-cell.has-spend { background:var(--primary-soft); }
+    .calendar-head { color:var(--muted); font-size:.72rem; font-weight:800; text-align:center; }
+    .search-row { display:grid; grid-template-columns:1.5fr 1fr 1fr auto; gap:10px; }
+    .limit-bar { height:8px; border-radius:99px; background:#e5e7eb; overflow:hidden; }
+    .limit-bar > div { height:100%; background:var(--primary); }
+    @media (max-width:767px){ .stat-grid{grid-template-columns:1fr;} .search-row{grid-template-columns:1fr 1fr;} .calendar-cell{min-height:58px;font-size:.8rem;} }
+
+    @media (max-width: 576px) {
+      .app-shell {
+        padding-top: 16px;
+      }
+      .summary-value {
+        font-size: 1.35rem;
+      }
+    }
+
+    /* Offline Bootstrap-compatible utility styles used by ExpenseFlow. */
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+    .d-flex { display: flex !important; }
+    .d-none { display: none !important; }
+    .flex-wrap { flex-wrap: wrap !important; }
+    .flex-grow-1 { flex-grow: 1 !important; }
+    .flex-shrink-0 { flex-shrink: 0 !important; }
+    .align-items-center { align-items: center !important; }
+    .align-items-end { align-items: flex-end !important; }
+    .justify-content-between { justify-content: space-between !important; }
+    .text-end { text-align: right !important; }
+    .text-secondary { color: #6b7280 !important; }
+    .fw-bold { font-weight: 700 !important; }
+    .fw-semibold { font-weight: 600 !important; }
+    .fs-3 { font-size: 1.75rem !important; }
+    .fs-5 { font-size: 1.25rem !important; }
+    .small { font-size: .875em !important; }
+    .p-2 { padding: .5rem !important; }
+    .p-3 { padding: 1rem !important; }
+    .p-md-4 { padding: 1.5rem !important; }
+    .mb-1 { margin-bottom: .25rem !important; }
+    .mb-2 { margin-bottom: .5rem !important; }
+    .mb-3 { margin-bottom: 1rem !important; }
+    .mb-4 { margin-bottom: 1.5rem !important; }
+    .mt-1 { margin-top: .25rem !important; }
+    .mt-2 { margin-top: .5rem !important; }
+    .mt-3 { margin-top: 1rem !important; }
+    .mt-4 { margin-top: 1.5rem !important; }
+    .my-3 { margin-top: 1rem !important; margin-bottom: 1rem !important; }
+    .my-4 { margin-top: 1.5rem !important; margin-bottom: 1.5rem !important; }
+    .gap-2 { gap: .5rem !important; }
+    .gap-3 { gap: 1rem !important; }
+    .row { display: flex; flex-wrap: wrap; margin: calc(-.5 * .75rem); }
+    .row > * { width: 100%; padding: .75rem; }
+    .col-12 { flex: 0 0 auto; width: 100%; }
+    .col-md-4, .col-md-5, .col-sm-6 { flex: 0 0 auto; }
+    .nav { display: flex; padding-left: 0; margin-bottom: 0; list-style: none; }
+    .nav-fill > .nav-item { flex: 1 1 auto; text-align: center; }
+    .nav-link { display: block; border: 0; background: transparent; padding: .65rem .8rem; width: 100%; }
+    .nav-pills .nav-link { color: #4b5563; }
+    .nav-pills .nav-link.active { color: #fff; }
+    .form-label { display: inline-block; margin-bottom: .5rem; }
+    .form-control, .form-select {
+      display: block; width: 100%; padding: .55rem .75rem;
+      font-size: 1rem; line-height: 1.5; color: #172033;
+      background: #fff; border: 1px solid #d1d5db;
+      appearance: none;
+    }
+    .form-select { background-image: linear-gradient(45deg, transparent 50%, #6b7280 50%), linear-gradient(135deg, #6b7280 50%, transparent 50%); background-position: calc(100% - 18px) 50%, calc(100% - 12px) 50%; background-size: 6px 6px, 6px 6px; background-repeat: no-repeat; padding-right: 2.25rem; }
+    .form-check { display: flex; align-items: center; gap: .5rem; }
+    .form-check-input { width: 1.1em; height: 1.1em; margin: 0; accent-color: var(--primary); }
+    .form-check-label { cursor: pointer; }
+    .form-switch .form-check-input { width: 2.2em; border-radius: 2em; }
+    .btn { display: inline-block; padding: .55rem .9rem; border: 1px solid transparent; background: #fff; text-align: center; vertical-align: middle; user-select: none; }
+    .btn-sm { padding: .35rem .65rem; font-size: .875rem; }
+    .btn-primary { color: #fff; background: var(--primary); border-color: var(--primary); }
+    .btn-success { color: #fff; background: var(--success); border-color: var(--success); }
+    .btn-outline-primary { color: var(--primary); border-color: var(--primary); background: #fff; }
+    .btn-outline-secondary { color: #4b5563; border-color: #9ca3af; background: #fff; }
+    .btn-outline-danger { color: var(--danger); border-color: var(--danger); background: #fff; }
+    .btn:hover { filter: brightness(.96); }
+    .btn-close { width: 1.5rem; height: 1.5rem; padding: .25rem; border: 0; background: transparent; position: relative; }
+    .btn-close::before, .btn-close::after { content: ""; position: absolute; left: 50%; top: 50%; width: 1.25rem; height: 2px; background: #374151; transform: translate(-50%,-50%) rotate(45deg); }
+    .btn-close::after { transform: translate(-50%,-50%) rotate(-45deg); }
+    .modal { position: fixed; inset: 0; z-index: 1055; display: none; overflow-x: hidden; overflow-y: auto; outline: 0; background: rgba(17,24,39,.45); }
+    .modal.show { display: block; }
+    .modal-dialog { position: relative; width: auto; margin: 1.75rem auto; max-width: 500px; pointer-events: none; min-height: calc(100% - 3.5rem); display: flex; align-items: center; }
+    .modal-content { position: relative; display: flex; flex-direction: column; width: 100%; pointer-events: auto; background: #fff; background-clip: padding-box; outline: 0; box-shadow: 0 20px 50px rgba(0,0,0,.2); }
+    .modal-header, .modal-footer { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); }
+    .modal-footer { justify-content: flex-end; gap: .5rem; border-top: 1px solid var(--border); border-bottom: 0; }
+    .modal-body { position: relative; flex: 1 1 auto; padding: 1.25rem; }
+    .modal-title { margin: 0; }
+    .modal-backdrop { position: fixed; inset: 0; z-index: 1050; background: #000; opacity: .35; }
+    body.modal-open { overflow: hidden; }
+    .progress { overflow: hidden; }
+    hr { border: 0; border-top: 1px solid var(--border); opacity: 1; }
+    .badge { display: inline-block; padding: .35em .65em; font-size: .75em; font-weight: 700; border-radius: .5rem; }
+    .text-bg-success { color: #fff !important; background: var(--success) !important; }
+    .text-bg-secondary { color: #fff !important; background: #6b7280 !important; }
+    .min-w-0 { min-width: 0 !important; }
+
+    @media (min-width: 576px) {
+      .col-sm-6 { width: 50%; }
+    }
+    @media (min-width: 768px) {
+      .col-md-4 { width: 33.333333%; }
+      .col-md-5 { width: 41.666667%; }
+      .p-md-4 { padding: 1.5rem !important; }
+      .mt-md-4 { margin-top: 1.5rem !important; }
+    }
+    @media (max-width: 767.98px) {
+      .nav-fill { flex-wrap: wrap; }
+      .nav-fill .nav-item { flex: 1 1 50%; }
+      .modal-dialog { margin: .75rem; min-height: calc(100% - 1.5rem); max-width: none; }
+    }
+  </style>
+</head>
+
+<body>
+<div class="app-shell">
+
+  <!-- Header -->
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+      <div class="brand fs-3">Expense<span>Flow</span></div>
+      <div class="text-secondary small">Simple personal budget & expense tracker</div>
+    </div>
+    <button class="btn btn-primary" id="openBudgetBtn">Set Monthly Budget</button>
+  </div>
+
+  <!-- Dashboard -->
+  <div class="app-card p-3 p-md-4 mb-4">
+    <div class="row g-3">
+      <div class="col-12 col-md-4">
+        <div class="summary-card">
+          <div class="summary-label">Monthly Budget</div>
+          <div class="summary-value" id="budgetDisplay">₹0</div>
+        </div>
+      </div>
+
+      <div class="col-12 col-md-4">
+        <div class="summary-card">
+          <div class="summary-label">Total Spent</div>
+          <div class="summary-value" id="spentDisplay">₹0</div>
+        </div>
+      </div>
+
+      <div class="col-12 col-md-4">
+        <div class="summary-card">
+          <div class="summary-label">Remaining</div>
+          <div class="summary-value remaining-positive" id="remainingDisplay">₹0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-4">
+      <div class="d-flex justify-content-between small mb-2">
+        <span class="text-secondary">Budget used</span>
+        <strong id="budgetPercent">0%</strong>
+      </div>
+      <div class="progress">
+        <div class="progress-bar" id="budgetProgress" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <div class="app-card p-2 mb-4">
+    <ul class="nav nav-pills nav-fill" id="mainTabs">
+      <li class="nav-item">
+        <button class="nav-link active" data-tab="today">Today</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-tab="history">History</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-tab="monthly">Monthly Summary</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-tab="money">Money</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-tab="insights">Insights</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-tab="manage">Manage Expenses</button>
+      </li>
+    </ul>
+  </div>
+
+  <!-- TODAY -->
+  <section id="tab-today">
+    <div class="app-card p-3 p-md-4">
+      <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+        <div>
+          <h4 class="section-title">Today's Expenses</h4>
+          <div class="section-subtitle" id="todayDate"></div>
+        </div>
+        <div class="text-end">
+          <div class="small text-secondary">Today's expenditure</div>
+          <div class="fw-bold fs-5" id="todaySpent">₹0</div>
+        </div>
+      </div>
+
+      <div id="todayExpenseList"></div>
+
+      <div class="d-flex flex-wrap gap-2 mt-4">
+        <button class="btn btn-outline-secondary" id="resetTodayBtn">Reset Today's Expenses</button>
+      </div>
+
+      <div class="small-note mt-3">
+        Checking an entity records an actual transaction for today. Variable expenses can have a different amount every day.
+      </div>
+    </div>
+  </section>
+
+  <!-- HISTORY -->
+  <section id="tab-history" class="d-none">
+    <div class="app-card p-3 p-md-4">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+          <h4 class="section-title">Expense History</h4>
+          <div class="section-subtitle">Previous days remain saved even after you edit or delete an entity.</div>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+          <button class="btn btn-primary btn-sm" id="addPastExpenseBtn">+ Add Past Expense</button>
+          
+        </div>
+      </div>
+      <div id="historyList"></div>
+    </div>
+  </section>
+
+  <!-- MONTHLY -->
+  <section id="tab-monthly" class="d-none">
+    <div class="app-card p-3 p-md-4">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+          <h4 class="section-title">Monthly Summary</h4>
+          <div class="section-subtitle">Review spending by month and category. Excel export downloads only the selected month.</div>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+          <select id="monthSelector" class="form-select" style="max-width:220px"></select>
+          <button class="btn btn-success" id="downloadMonthExcelBtn" type="button">↓ Download This Month</button>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-4">
+        <div class="col-12 col-md-4">
+          <div class="summary-card">
+            <div class="summary-label">Budget</div>
+            <div class="summary-value" id="monthBudget">₹0</div>
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="summary-card">
+            <div class="summary-label">Spent</div>
+            <div class="summary-value" id="monthSpent">₹0</div>
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="summary-card">
+            <div class="summary-label">Transactions</div>
+            <div class="summary-value" id="monthTransactions">0</div>
+          </div>
+        </div>
+      </div>
+
+      <h6 class="fw-bold mb-3">Category Breakdown</h6>
+      <div id="categoryBreakdown"></div>
+    </div>
+  </section>
+
+  <!-- MONEY -->
+  <section id="tab-money" class="d-none">
+    <div class="app-card p-3 p-md-4">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div><h4 class="section-title">Money Given / Received</h4><div class="section-subtitle">Track money between you and friends separately from expenses and budget.</div></div>
+        <button class="btn btn-primary" id="addMoneyBtn">+ Add Money Record</button>
+      </div>
+      <div class="stat-grid mb-4">
+        <div class="summary-card"><div class="summary-label">Money Given</div><div class="summary-value money-negative" id="moneyGivenTotal">₹0</div></div>
+        <div class="summary-card"><div class="summary-label">Money Received</div><div class="summary-value money-positive" id="moneyReceivedTotal">₹0</div></div>
+        <div class="summary-card"><div class="summary-label">Net Outstanding</div><div class="summary-value" id="moneyNetTotal">₹0</div></div>
+      </div>
+      <h6 class="fw-bold mb-3">Person-wise Balance</h6><div id="personBalances"></div>
+      <hr class="my-4">
+      <h6 class="fw-bold mb-3">Money History</h6><div class="search-row mb-3"><input id="moneySearch" class="form-control" placeholder="Search person or note"><select id="moneyDirectionFilter" class="form-select"><option value="all">All</option><option value="given">Given</option><option value="received">Received</option></select><select id="moneyPersonFilter" class="form-select"><option value="all">All people</option></select><button id="clearMoneyFilters" class="btn btn-outline-secondary">Clear</button></div>
+      <div id="moneyHistory"></div>
+    </div>
+  </section>
+
+  <!-- INSIGHTS -->
+  <section id="tab-insights" class="d-none">
+    <div class="app-card p-3 p-md-4">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4"><div><h4 class="section-title">Insights & Planning</h4><div class="section-subtitle">Savings, daily limits, recurring expenses, spending insights and calendar.</div></div><button class="btn btn-outline-primary" id="addRecurringBtn">+ Recurring Expense</button></div>
+      <div class="row g-3 mb-4">
+        <div class="col-12 col-md-4"><div class="summary-card"><div class="summary-label">Savings Goal</div><div class="summary-value" id="savingsGoalDisplay">₹0</div><div class="small-note" id="savingsProgressText">Set a goal below.</div></div></div>
+        <div class="col-12 col-md-4"><div class="summary-card"><div class="summary-label">Daily Spending Limit</div><div class="summary-value" id="dailyLimitDisplay">₹0</div><div class="small-note" id="dailyLimitStatus">Set your limit below.</div></div></div>
+        <div class="col-12 col-md-4"><div class="summary-card"><div class="summary-label">Average Daily Spend</div><div class="summary-value" id="avgDailySpend">₹0</div><div class="small-note" id="topCategoryInsight">No data yet.</div></div></div>
+      </div>
+      <div class="row g-3 mb-4">
+        <div class="col-12 col-md-5"><div class="app-card p-3"><h6 class="fw-bold">Savings Goal</h6><div class="small-note mb-2">Monthly target; does not change your expense budget.</div><input type="number" min="0" id="savingsGoalInput" class="form-control mb-2" placeholder="₹ e.g. 5000"><button id="saveSavingsBtn" class="btn btn-primary btn-sm">Save Goal</button></div></div>
+        <div class="col-12 col-md-7"><div class="app-card p-3"><h6 class="fw-bold">Daily Spending Limit</h6><div class="small-note mb-2">Your planned maximum for today. This is a planning alert, not a budget deduction.</div><input type="number" min="0" id="dailyLimitInput" class="form-control mb-2" placeholder="₹ e.g. 300"><button id="saveDailyLimitBtn" class="btn btn-primary btn-sm">Save Limit</button></div></div>
+      </div>
+      <h6 class="fw-bold mb-3">Recurring Expenses</h6><div id="recurringList" class="mb-4"></div>
+      <h6 class="fw-bold mb-3">Spending Insights</h6><div id="insightCards" class="mb-4"></div>
+      <h6 class="fw-bold mb-3">Spending Calendar</h6><div id="spendingCalendar"></div>
+    </div>
+  </section>
+
+  <!-- MANAGE -->
+  <section id="tab-manage" class="d-none">
+    <div class="app-card p-3 p-md-4">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+          <h4 class="section-title">Manage Expense Entities</h4>
+          <div class="section-subtitle">Add, edit, disable or delete the expenses you actually use.</div>
+        </div>
+        <button class="btn btn-primary" id="addEntityBtn">+ Add Entity</button>
+      </div>
+
+      <div id="entityList"></div>
+
+      <div class="small-note mt-3">
+        Deleting an entity does not delete its previous transactions. Your history stays intact.
+      </div>
+    </div>
+
+    <div class="app-card p-3 p-md-4 mt-4">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+        <div>
+          <h4 class="section-title">Reminders</h4>
+          <div class="section-subtitle">Set a daily 9 PM reminder to fill expenses, plus one-time date/time reminders for specific entities.</div>
+        </div>
+        <button class="btn btn-outline-primary" id="enableNotificationsBtn" type="button">Enable Notifications</button>
+      </div>
+
+      <div class="row g-3 align-items-end">
+        <div class="col-12 col-md-5">
+          <label class="form-label fw-semibold">Daily data-entry reminder</label>
+          <input type="time" class="form-control" id="dailyReminderTime">
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="form-check form-switch mt-md-4">
+            <input class="form-check-input" type="checkbox" id="dailyReminderEnabled">
+            <label class="form-check-label fw-semibold" for="dailyReminderEnabled">Remind me every day</label>
+          </div>
+        </div>
+        <div class="col-12 col-md-3">
+          <button class="btn btn-primary mt-md-4" id="saveDailyReminderBtn" type="button">Save Daily Reminder</button>
+        </div>
+      </div>
+
+      <div class="small-note mt-2">
+        Daily reminder is 9:00 PM by default, but you can choose any time and save it. Entity reminders are one-time: choose a date and time for something like Rent, and it will remind you only on that date.
+      </div>
+
+      <hr class="my-4">
+
+      <h6 class="fw-bold mb-3">Entity payment reminders</h6>
+      <div id="reminderEntityList"></div>
+
+      <div class="small-note mt-3">
+        Browser notifications require permission. In this standalone HTML version, reminders are checked while the page is open. If the browser/device is completely closed or asleep, the reminder may not fire.
+      </div>
+      <div id="notificationStatus" class="small mt-2" aria-live="polite"></div>
+    </div>
+  </section>
+
+</div>
+
+<!-- Budget Modal -->
+<div class="modal fade" id="budgetModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form id="budgetForm">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">Set Monthly Budget</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <label class="form-label fw-semibold">Budget amount</label>
+          <input type="number" min="0" step="1" class="form-control" id="budgetInput" required>
+          <div class="small-note mt-2">This budget is used for the current month.</div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Budget</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Entity Modal -->
+<div class="modal fade" id="entityModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form id="entityForm">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold" id="entityModalTitle">Add Expense Entity</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          <input type="hidden" id="entityId">
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Expense name</label>
+            <input type="text" maxlength="50" class="form-control" id="entityName" placeholder="e.g. Bus" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Expense type</label>
+            <select class="form-select" id="entityType">
+              <option value="fixed">Fixed amount</option>
+              <option value="variable">Variable amount</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Default amount</label>
+            <input type="number" min="0" step="1" class="form-control" id="entityAmount" placeholder="₹20" required>
+            <div class="small-note mt-1" id="amountHelp">Used as the default amount when you tick this expense.</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Category</label>
+            <select class="form-select" id="entityCategory">
+              <option>Transport</option>
+              <option>Food</option>
+              <option>Shopping</option>
+              <option>Bills</option>
+              <option>Entertainment</option>
+              <option>Other</option>
+              <option value="__add_new__">＋ Add new category</option>
+            </select>
+            <div id="newCategoryWrap" class="mt-2 d-none">
+              <input type="text" maxlength="40" class="form-control" id="newCategoryInput" placeholder="Type new category name">
+              <div class="small-note mt-1">Once saved, this category stays in your list for future use.</div>
+            </div>
+          </div>
+
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="entityActive" checked>
+            <label class="form-check-label fw-semibold" for="entityActive">Active entity</label>
+          </div>
+
+          <hr class="my-3">
+
+          <div class="form-check form-switch mb-2">
+            <input class="form-check-input" type="checkbox" id="entityReminderEnabled">
+            <label class="form-check-label fw-semibold" for="entityReminderEnabled">Set a one-time reminder for this expense</label>
+          </div>
+
+          <div class="row g-2">
+            <div class="col-12 col-sm-6">
+              <label class="form-label fw-semibold">Reminder date</label>
+              <input type="date" class="form-control" id="entityReminderDate">
+            </div>
+            <div class="col-12 col-sm-6">
+              <label class="form-label fw-semibold">Reminder time</label>
+              <input type="time" class="form-control" id="entityReminderTime" value="20:00">
+            </div>
+          </div>
+
+          <div class="small-note mt-1">
+            Example: Rent → 5 September → 9:00 AM. You will be reminded only on that date and time. After it fires, the reminder is automatically turned off.
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Entity</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Add Past Expense Modal -->
+<div class="modal fade" id="pastExpenseModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form id="pastExpenseForm">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">Add Expense for Previous Date</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Date</label>
+            <input type="date" class="form-control" id="pastExpenseDate" required>
+            <div class="small-note mt-1">You can add an expense for today or any previous date.</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Expense</label>
+            <select class="form-select" id="pastExpenseEntity" required></select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Category</label>
+            <select class="form-select" id="pastExpenseCategory"></select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Actual amount</label>
+            <input type="number" min="0" step="1" class="form-control" id="pastExpenseAmount" required>
+            <div class="small-note mt-1">Enter what you actually spent on that date.</div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Expense</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Variable Amount Modal -->
+<div class="modal fade" id="variableModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form id="variableForm">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">Enter Actual Amount</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-2 fw-bold" id="variableExpenseName"></div>
+          <div class="small-note mb-3">This expense is variable, so today's actual amount can be different.</div>
+          <label class="form-label fw-semibold">Today's amount</label>
+          <input type="number" min="0" step="1" class="form-control" id="variableAmount" required>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" id="cancelVariableBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary">Record Expense</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+<!-- Money Modal -->
+<div class="modal fade" id="moneyModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><form id="moneyForm"><div class="modal-header"><h5 class="modal-title fw-bold" id="moneyModalTitle">Add Money Record</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input type="hidden" id="moneyId"><div class="mb-3"><label class="form-label fw-semibold">Type</label><select id="moneyDirection" class="form-select"><option value="given">I gave money</option><option value="received">I received money</option></select></div><div class="mb-3"><label class="form-label fw-semibold">Person</label><input id="moneyPerson" class="form-control" maxlength="60" required placeholder="e.g. Rahul"></div><div class="mb-3"><label class="form-label fw-semibold">Amount</label><input id="moneyAmount" type="number" min="0" step="1" class="form-control" required></div><div class="mb-3"><label class="form-label fw-semibold">Date</label><input id="moneyDate" type="date" class="form-control" required></div><div><label class="form-label fw-semibold">Note</label><input id="moneyNote" class="form-control" maxlength="120" placeholder="Optional"></div></div><div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary">Save Record</button></div></form></div></div></div>
+<!-- Recurring Modal -->
+<div class="modal fade" id="recurringModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><form id="recurringForm"><div class="modal-header"><h5 class="modal-title fw-bold" id="recurringModalTitle">Add Recurring Expense</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input type="hidden" id="recurringId"><div class="mb-3"><label class="form-label fw-semibold">Expense name</label><input id="recurringName" class="form-control" required maxlength="60"></div><div class="mb-3"><label class="form-label fw-semibold">Amount</label><input id="recurringAmount" type="number" min="0" step="1" class="form-control" required></div><div class="mb-3"><label class="form-label fw-semibold">Category</label><select id="recurringCategory" class="form-select"></select></div><div><label class="form-label fw-semibold">Day of month</label><input id="recurringDay" type="number" min="1" max="31" value="1" class="form-control" required></div></div><div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary">Save Recurring Expense</button></div></form></div></div></div>
+<script>
+(() => {
+  "use strict";
+
+  const STORAGE = {
+    entities: "expenseflow_entities_v2",
+    transactions: "expenseflow_transactions_v2",
+    budgets: "expenseflow_budgets_v2",
+    categories: "expenseflow_categories_v2",
+    reminders: "expenseflow_reminders_v2",
+    money: "expenseflow_money_v1",
+    recurring: "expenseflow_recurring_v1",
+    savings: "expenseflow_savings_v1",
+    dailyLimit: "expenseflow_daily_limit_v1"
+  };
+
+  const defaultEntities = [
+    { id: "bus", name: "Bus", type: "fixed", amount: 20, category: "Transport", active: true, reminderEnabled: false, reminderDate: "", reminderTime: "20:00" },
+    { id: "lunch", name: "Lunch", type: "fixed", amount: 80, category: "Food", active: true, reminderEnabled: false, reminderDate: "", reminderTime: "20:00" },
+    { id: "tea", name: "Tea", type: "fixed", amount: 15, category: "Food", active: true, reminderEnabled: false, reminderDate: "", reminderTime: "20:00" },
+    { id: "snacks", name: "Snacks", type: "fixed", amount: 30, category: "Food", active: true, reminderEnabled: false, reminderDate: "", reminderTime: "20:00" },
+    { id: "auto", name: "Auto / Cab", type: "variable", amount: 50, category: "Transport", active: true, reminderEnabled: false, reminderDate: "", reminderTime: "20:00" }
+  ];
+
+  let entities = load(STORAGE.entities, null);
+  let transactions = load(STORAGE.transactions, []);
+  let budgets = load(STORAGE.budgets, {});
+  const defaultCategories = ["Transport", "Food", "Shopping", "Bills", "Entertainment", "Other"];
+  let categories = load(STORAGE.categories, null);
+  let reminders = load(STORAGE.reminders, {
+    dailyEnabled: false,
+    dailyTime: "21:00"
+  });
+  let variableEntityId = null;
+  let reminderTimers = [];
+  let moneyRecords = load(STORAGE.money, []);
+  let recurringExpenses = load(STORAGE.recurring, []);
+  let savingsGoal = Number(load(STORAGE.savings, 0)) || 0;
+  let dailyLimit = Number(load(STORAGE.dailyLimit, 0)) || 0;
+
+  if (!Array.isArray(categories)) {
+    categories = [...defaultCategories];
+    saveAll();
+  }
+
+  if (!Array.isArray(entities)) {
+    entities = defaultEntities.map(e => ({...e}));
+    saveAll();
+  }
+
+  entities.forEach(entity => {
+    if (typeof entity.reminderEnabled !== "boolean") entity.reminderEnabled = false;
+    if (typeof entity.reminderDate !== "string") entity.reminderDate = "";
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(entity.reminderTime || "")) entity.reminderTime = "20:00";
+  });
+
+  // Lightweight modal implementation so the app works fully offline/file://
+  // without Bootstrap or any external CDN.
+  class OfflineModal {
+    constructor(element) {
+      this.element = element;
+      this.backdrop = null;
+      this.onKeyDown = (event) => {
+        if (event.key === "Escape") this.hide();
+      };
+    }
+    show() {
+      if (this.backdrop) return;
+      this.element.classList.add("show");
+      this.element.style.display = "block";
+      this.element.removeAttribute("aria-hidden");
+      document.body.classList.add("modal-open");
+      this.backdrop = document.createElement("div");
+      this.backdrop.className = "modal-backdrop fade show";
+      document.body.appendChild(this.backdrop);
+      this.backdrop.addEventListener("click", () => this.hide());
+      document.addEventListener("keydown", this.onKeyDown);
+      const focusable = this.element.querySelector("input, select, textarea, button");
+      if (focusable) setTimeout(() => focusable.focus(), 0);
+    }
+    hide() {
+      if (!this.backdrop) return;
+      this.element.classList.remove("show");
+      this.element.style.display = "none";
+      this.element.setAttribute("aria-hidden", "true");
+      this.backdrop.remove();
+      this.backdrop = null;
+      document.body.classList.remove("modal-open");
+      this.element.dispatchEvent(new Event("hidden.bs.modal"));
+      document.removeEventListener("keydown", this.onKeyDown);
+    }
+  }
+
+  const budgetModal = new OfflineModal(document.getElementById("budgetModal"));
+  const entityModal = new OfflineModal(document.getElementById("entityModal"));
+  const variableModal = new OfflineModal(document.getElementById("variableModal"));
+  const pastExpenseModal = new OfflineModal(document.getElementById("pastExpenseModal"));
+  const moneyModal = new OfflineModal(document.getElementById("moneyModal"));
+  const recurringModal = new OfflineModal(document.getElementById("recurringModal"));
+
+  document.querySelectorAll('[data-bs-dismiss="modal"]').forEach(button => {
+    button.addEventListener("click", () => {
+      const modalElement = button.closest(".modal");
+      if (!modalElement) return;
+      const modalMap = {
+        budgetModal, entityModal, variableModal, pastExpenseModal, moneyModal, recurringModal
+      };
+      const modal = modalMap[modalElement.id];
+      if (modal) modal.hide();
+    });
+  });
+
+  function load(key, fallback) {
+    try {
+      const value = localStorage.getItem(key);
+      return value === null ? fallback : JSON.parse(value);
+    } catch {
+      return fallback;
+    }
+  }
+
+  function saveAll() {
+    localStorage.setItem(STORAGE.entities, JSON.stringify(entities));
+    localStorage.setItem(STORAGE.transactions, JSON.stringify(transactions));
+    localStorage.setItem(STORAGE.budgets, JSON.stringify(budgets));
+    localStorage.setItem(STORAGE.categories, JSON.stringify(categories));
+    localStorage.setItem(STORAGE.reminders, JSON.stringify(reminders));
+    localStorage.setItem(STORAGE.money, JSON.stringify(moneyRecords));
+    localStorage.setItem(STORAGE.recurring, JSON.stringify(recurringExpenses));
+    localStorage.setItem(STORAGE.savings, JSON.stringify(savingsGoal));
+    localStorage.setItem(STORAGE.dailyLimit, JSON.stringify(dailyLimit));
+  }
+
+  function todayKey(date = new Date()) {
+    return [
+      date.getFullYear(),
+      String(date.getMonth() + 1).padStart(2, "0"),
+      String(date.getDate()).padStart(2, "0")
+    ].join("-");
+  }
+
+  function monthKey(date = new Date()) {
+    return todayKey(date).slice(0, 7);
+  }
+
+  function formatDate(key) {
+    const [y, m, d] = key.split("-").map(Number);
+    return new Intl.DateTimeFormat("en-IN", {
+      day: "numeric",
+      month: "long",
+      year: "numeric"
+    }).format(new Date(y, m - 1, d));
+  }
+
+  function formatMonth(key) {
+    const [y, m] = key.split("-").map(Number);
+    return new Intl.DateTimeFormat("en-IN", {
+      month: "long",
+      year: "numeric"
+    }).format(new Date(y, m - 1, 1));
+  }
+
+  function money(value) {
+    const n = Number(value) || 0;
+    return (n < 0 ? "-₹" : "₹") + Math.abs(Math.round(n)).toLocaleString("en-IN");
+  }
+
+  function getBudget(month = monthKey()) {
+    return Number(budgets[month]) || 0;
+  }
+
+  function setBudget(month, amount) {
+    budgets[month] = Math.round(Number(amount) || 0);
+    saveAll();
+  }
+
+  function getTransactionsForDate(date) {
+    return transactions.filter(t => t.date === date);
+  }
+
+  function getMonthTransactions(month) {
+    return transactions.filter(t => t.date.startsWith(month));
+  }
+
+  function getTotalSpent(month = monthKey()) {
+    return getMonthTransactions(month).reduce((sum, t) => sum + Number(t.amount || 0), 0);
+  }
+
+  function getTodayTransaction(entityId) {
+    return transactions.find(t => t.date === todayKey() && t.entityId === entityId);
+  }
+
+  function getEntity(id) {
+    return entities.find(e => e.id === id);
+  }
+
+  function removeTodayTransaction(entityId) {
+    transactions = transactions.filter(t => !(t.date === todayKey() && t.entityId === entityId));
+    saveAll();
+    renderAll();
+  }
+
+  function addTodayTransaction(entity, amount) {
+    amount = Number(amount);
+
+    if (!Number.isFinite(amount) || amount < 0) {
+      alert("Please enter a valid amount.");
+      return;
+    }
+
+    transactions = transactions.filter(
+      t => !(t.date === todayKey() && t.entityId === entity.id)
+    );
+
+    transactions.push({
+      id: "tx_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8),
+      date: todayKey(),
+      entityId: entity.id,
+      entityName: entity.name,
+      category: entity.category,
+      amount: Math.round(amount),
+      createdAt: new Date().toISOString()
+    });
+
+    saveAll();
+    renderAll();
+  }
+
+  function normalizeCategoryName(name) {
+    return String(name || "").trim().replace(/\s+/g, " ");
+  }
+
+  function addCategoryIfNew(name) {
+    const clean = normalizeCategoryName(name);
+    if (!clean) return "";
+    const existing = categories.find(c => c.toLowerCase() === clean.toLowerCase());
+    if (existing) return existing;
+    categories.push(clean);
+    categories.sort((a, b) => a.localeCompare(b));
+    saveAll();
+    return clean;
+  }
+
+  function renderCategorySelect(selectId, selectedValue, includeAddOption = false) {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+
+    const current = selectedValue || select.value;
+    select.innerHTML = "";
+
+    categories.forEach(category => {
+      const option = document.createElement("option");
+      option.value = category;
+      option.textContent = category;
+      select.appendChild(option);
+    });
+
+    if (includeAddOption) {
+      const addOption = document.createElement("option");
+      addOption.value = "__add_new__";
+      addOption.textContent = "＋ Add new category";
+      select.appendChild(addOption);
+    }
+
+    if (current && categories.includes(current)) {
+      select.value = current;
+    } else if (select.options.length) {
+      select.value = select.options[0].value;
+    }
+  }
+
+  function requestNotificationPermission() {
+    const status = document.getElementById("notificationStatus");
+
+    if (!("Notification" in window)) {
+      status.textContent = "This browser does not support notifications.";
+      status.className = "small mt-2 text-danger";
+      return;
+    }
+
+    Notification.requestPermission().then(permission => {
+      if (permission === "granted") {
+        status.textContent = "Notifications enabled.";
+        status.className = "small mt-2 text-success";
+        scheduleReminders();
+      } else {
+        status.textContent = "Notifications are blocked. Allow them in browser settings.";
+        status.className = "small mt-2 text-danger";
+      }
+    });
+  }
+
+  function sendNotification(title, body) {
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
+    try {
+      new Notification(title, { body });
+    } catch {}
+  }
+
+  function scheduleReminders() {
+    reminderTimers.forEach(clearInterval);
+    reminderTimers = [];
+
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
+
+    reminderTimers.push(setInterval(checkReminders, 30000));
+    checkReminders();
+  }
+
+  function checkReminders() {
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
+
+    const now = new Date();
+    const date = todayKey(now);
+    const time = String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
+
+    // Daily data-entry reminder.
+    if (reminders.dailyEnabled && time === (reminders.dailyTime || "21:00")) {
+      const dailyKey = "expenseflow_daily_notified_" + date;
+      const todayTransactions = getTransactionsForDate(date);
+
+      if (!localStorage.getItem(dailyKey) && todayTransactions.length === 0) {
+        sendNotification("ExpenseFlow", "Don't forget to fill today's expenses.");
+        localStorage.setItem(dailyKey, "1");
+      }
+    }
+
+    // One-time entity reminders.
+    entities.forEach(entity => {
+      if (!entity.active || !entity.reminderEnabled) return;
+      if (!entity.reminderDate || entity.reminderDate !== date) return;
+      if ((entity.reminderTime || "20:00") !== time) return;
+
+      const alreadyRecorded = getTodayTransaction(entity.id);
+      const notifiedKey = "expenseflow_entity_notified_" + entity.id + "_" + entity.reminderDate;
+
+      if (!alreadyRecorded && !localStorage.getItem(notifiedKey)) {
+        const amountText = entity.type === "fixed" ? " (" + money(entity.amount) + ")" : "";
+        sendNotification(
+          "Expense reminder: " + entity.name,
+          "Don't forget to record " + entity.name + amountText + "."
+        );
+
+        localStorage.setItem(notifiedKey, "1");
+
+        // One-time reminder is consumed after firing.
+        entity.reminderEnabled = false;
+        saveAll();
+        renderReminderSettings();
+      }
+    });
+  }
+
+  function renderReminderSettings() {
+    const dailyEnabled = document.getElementById("dailyReminderEnabled");
+    const dailyTime = document.getElementById("dailyReminderTime");
+    if (!dailyEnabled || !dailyTime) return;
+
+    dailyEnabled.checked = !!reminders.dailyEnabled;
+    dailyTime.value = reminders.dailyTime || "21:00";
+
+    const container = document.getElementById("reminderEntityList");
+    container.innerHTML = "";
+
+    const reminderEntities = entities.filter(e => e.active);
+
+    if (!reminderEntities.length) {
+      container.innerHTML = '<div class="empty-state">No active expense entities available for reminders.</div>';
+      return;
+    }
+
+    reminderEntities.forEach(entity => {
+      const row = document.createElement("div");
+      row.className = "entity-row d-flex flex-wrap align-items-center justify-content-between gap-3 mb-2";
+
+      row.innerHTML = `
+        <div class="flex-grow-1">
+          <div class="fw-bold">${escapeHtml(entity.name)}</div>
+          <div class="expense-meta">
+            ${escapeHtml(entity.category)}
+            · ${entity.type === "fixed" ? money(entity.amount) : "Variable amount"}
+            ${entity.reminderEnabled && entity.reminderDate
+              ? " · Reminder: " + escapeHtml(entity.reminderDate) + " at " + escapeHtml(entity.reminderTime || "20:00")
+              : " · No one-time reminder set"}
+          </div>
+        </div>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <input type="date" class="form-control reminder-date" data-id="${entity.id}" value="${escapeHtml(entity.reminderDate || "")}" min="${todayKey()}" style="width:155px">
+          <input type="time" class="form-control reminder-time" data-id="${entity.id}" value="${escapeHtml(entity.reminderTime || "20:00")}" style="width:125px" ${entity.reminderEnabled ? "" : "disabled"}>
+          <div class="form-check form-switch">
+            <input class="form-check-input entity-reminder-toggle" type="checkbox" data-id="${entity.id}" ${entity.reminderEnabled ? "checked" : ""}>
+            <label class="form-check-label fw-semibold">Remind</label>
+          </div>
+        </div>
+      `;
+
+      container.appendChild(row);
+    });
+
+    container.querySelectorAll(".entity-reminder-toggle").forEach(toggle => {
+      toggle.addEventListener("change", () => {
+        const entity = getEntity(toggle.dataset.id);
+        const dateInput = container.querySelector(`.reminder-date[data-id="${entity.id}"]`);
+        const timeInput = container.querySelector(`.reminder-time[data-id="${entity.id}"]`);
+        if (!entity) return;
+
+        if (toggle.checked && (!dateInput.value || dateInput.value < todayKey())) {
+          toggle.checked = false;
+          alert("Choose today or a future reminder date first.");
+          return;
+        }
+
+        entity.reminderEnabled = toggle.checked;
+        entity.reminderDate = dateInput.value;
+        entity.reminderTime = timeInput.value || "20:00";
+        timeInput.disabled = !toggle.checked;
+
+        saveAll();
+        renderReminderSettings();
+        scheduleReminders();
+      });
+    });
+
+    container.querySelectorAll(".reminder-date").forEach(input => {
+      input.addEventListener("change", () => {
+        const entity = getEntity(input.dataset.id);
+        if (!entity) return;
+
+        if (input.value && input.value < todayKey()) {
+          alert("Reminder date must be today or a future date.");
+          input.value = entity.reminderDate || "";
+          return;
+        }
+
+        entity.reminderDate = input.value;
+        saveAll();
+        scheduleReminders();
+        renderReminderSettings();
+      });
+    });
+
+    container.querySelectorAll(".reminder-time").forEach(input => {
+      input.addEventListener("change", () => {
+        const entity = getEntity(input.dataset.id);
+        if (!entity) return;
+
+        if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(input.value)) {
+          input.value = entity.reminderTime || "20:00";
+          return;
+        }
+
+        entity.reminderTime = input.value;
+        saveAll();
+        scheduleReminders();
+        renderReminderSettings();
+      });
+    });
+  }
+
+  function renderDashboard() {
+    const budget = getBudget();
+    const spent = getTotalSpent();
+    const remaining = budget - spent;
+    const percent = budget > 0 ? Math.min(100, Math.max(0, (spent / budget) * 100)) : 0;
+
+    document.getElementById("budgetDisplay").textContent = money(budget);
+    document.getElementById("spentDisplay").textContent = money(spent);
+
+    const remainingEl = document.getElementById("remainingDisplay");
+    remainingEl.textContent = money(remaining);
+    remainingEl.classList.toggle("remaining-positive", remaining >= 0);
+    remainingEl.classList.toggle("remaining-negative", remaining < 0);
+
+    document.getElementById("budgetPercent").textContent = Math.round(percent) + "%";
+    document.getElementById("budgetProgress").style.width = percent + "%";
+  }
+
+  function renderToday() {
+    const date = todayKey();
+    const todayTransactions = getTransactionsForDate(date);
+    const todaySpent = todayTransactions.reduce((sum, t) => sum + Number(t.amount || 0), 0);
+
+    document.getElementById("todayDate").textContent = formatDate(date);
+    document.getElementById("todaySpent").textContent = money(todaySpent);
+
+    const container = document.getElementById("todayExpenseList");
+    container.innerHTML = "";
+
+    const activeEntities = entities.filter(e => e.active);
+
+    if (activeEntities.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="fw-bold mb-1">No active expense entities</div>
+          <div>Add an expense entity from the Manage Expenses section.</div>
+        </div>
+      `;
+      return;
+    }
+
+    activeEntities.forEach(entity => {
+      const tx = getTodayTransaction(entity.id);
+      const row = document.createElement("div");
+      row.className = "expense-row d-flex align-items-center gap-3 mb-2" + (tx ? " spent" : "");
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.className = "form-check-input expense-checkbox flex-shrink-0";
+      checkbox.checked = !!tx;
+      checkbox.setAttribute("aria-label", "Mark " + entity.name + " as spent");
+
+      checkbox.addEventListener("change", () => {
+        if (checkbox.checked) {
+          if (entity.type === "variable") {
+            variableEntityId = entity.id;
+            document.getElementById("variableExpenseName").textContent = entity.name;
+            document.getElementById("variableAmount").value = entity.amount || "";
+            variableModal.show();
+          } else {
+            addTodayTransaction(entity, entity.amount);
+          }
+        } else {
+          removeTodayTransaction(entity.id);
+        }
+      });
+
+      const content = document.createElement("div");
+      content.className = "flex-grow-1 min-w-0";
+
+      const name = document.createElement("div");
+      name.className = "expense-name";
+      name.textContent = entity.name;
+
+      const meta = document.createElement("div");
+      meta.className = "expense-meta";
+      meta.innerHTML = `
+        ${escapeHtml(entity.category)}
+        · ${entity.type === "fixed" ? "Fixed" : "Variable"}
+      `;
+
+      content.appendChild(name);
+      content.appendChild(meta);
+
+      const amount = document.createElement("div");
+      amount.className = "amount";
+      amount.textContent = money(tx ? tx.amount : entity.amount);
+
+      row.appendChild(checkbox);
+      row.appendChild(content);
+      row.appendChild(amount);
+      container.appendChild(row);
+    });
+  }
+
+  function renderHistory() {
+    const container = document.getElementById("historyList");
+    container.innerHTML = "";
+
+    if (transactions.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="fw-bold mb-1">No expense history yet</div>
+          <div>Your completed expenses will appear here.</div>
+        </div>
+      `;
+      return;
+    }
+
+    const groups = {};
+
+    [...transactions]
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .forEach(t => {
+        if (!groups[t.date]) groups[t.date] = [];
+        groups[t.date].push(t);
+      });
+
+    Object.keys(groups).forEach(date => {
+      const dayTransactions = groups[date];
+      const total = dayTransactions.reduce((sum, t) => sum + Number(t.amount || 0), 0);
+
+      const day = document.createElement("div");
+      day.className = "history-day";
+
+      const header = document.createElement("div");
+      header.className = "history-header d-flex justify-content-between gap-2";
+      header.innerHTML = `
+        <span>${escapeHtml(formatDate(date))}</span>
+        <span>${money(total)}</span>
+      `;
+
+      day.appendChild(header);
+
+      dayTransactions.forEach(t => {
+        const item = document.createElement("div");
+        item.className = "history-item d-flex justify-content-between align-items-center gap-3";
+
+        item.innerHTML = `
+          <div class="min-w-0">
+            <div class="fw-semibold">${escapeHtml(t.entityName)}</div>
+            <div class="expense-meta">${escapeHtml(t.category || "Other")}</div>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <strong>${money(t.amount)}</strong>
+            <button class="btn btn-sm btn-outline-primary edit-tx" data-id="${t.id}" type="button">Edit</button>
+            <button class="btn btn-sm btn-outline-danger delete-tx" data-id="${t.id}" type="button">Delete</button>
+          </div>
+        `;
+
+        day.appendChild(item);
+      });
+
+      container.appendChild(day);
+    });
+
+    container.querySelectorAll(".delete-tx").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.id;
+        const tx = transactions.find(t => t.id === id);
+        if (!tx) return;
+
+        transactions = transactions.filter(t => t.id !== id);
+        saveAll();
+        renderAll();
+      });
+    });
+
+    container.querySelectorAll(".edit-tx").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const tx = transactions.find(t => t.id === btn.dataset.id);
+        if (!tx) return;
+
+        document.getElementById("pastExpenseDate").value = tx.date;
+        document.getElementById("pastExpenseDate").max = todayKey();
+
+        const entitySelect = document.getElementById("pastExpenseEntity");
+        entitySelect.innerHTML = "";
+        entities.forEach(entity => {
+          const option = document.createElement("option");
+          option.value = entity.id;
+          option.textContent = entity.name + " · " + (entity.type === "variable" ? "Variable" : money(entity.amount));
+          entitySelect.appendChild(option);
+        });
+
+        if (!getEntity(tx.entityId)) {
+          const archivedOption = document.createElement("option");
+          archivedOption.value = tx.entityId;
+          archivedOption.textContent = tx.entityName + " · Archived";
+          entitySelect.appendChild(archivedOption);
+        }
+
+        entitySelect.value = tx.entityId;
+        renderCategorySelect("pastExpenseCategory", tx.category, true);
+        document.getElementById("pastExpenseAmount").value = tx.amount;
+
+        const form = document.getElementById("pastExpenseForm");
+        form.dataset.editingId = tx.id;
+        document.querySelector("#pastExpenseModal .modal-title").textContent = "Edit Expense Transaction";
+        pastExpenseModal.show();
+      });
+    });
+  }
+
+  function renderMonthly() {
+    const selector = document.getElementById("monthSelector");
+    const current = selector.value || monthKey();
+
+    const monthSet = new Set(Object.keys(budgets));
+    transactions.forEach(t => monthSet.add(t.date.slice(0, 7)));
+    monthSet.add(monthKey());
+
+    const months = [...monthSet].sort().reverse();
+
+    selector.innerHTML = "";
+    months.forEach(m => {
+      const option = document.createElement("option");
+      option.value = m;
+      option.textContent = formatMonth(m);
+      selector.appendChild(option);
+    });
+
+    selector.value = months.includes(current) ? current : monthKey();
+
+    const month = selector.value;
+    const monthTransactions = getMonthTransactions(month);
+    const spent = monthTransactions.reduce((sum, t) => sum + Number(t.amount || 0), 0);
+
+    document.getElementById("monthBudget").textContent = money(getBudget(month));
+    document.getElementById("monthSpent").textContent = money(spent);
+    document.getElementById("monthTransactions").textContent = monthTransactions.length;
+
+    const categoryTotals = {};
+    monthTransactions.forEach(t => {
+      const category = t.category || "Other";
+      categoryTotals[category] = (categoryTotals[category] || 0) + Number(t.amount || 0);
+    });
+
+    const breakdown = document.getElementById("categoryBreakdown");
+    breakdown.innerHTML = "";
+
+    const categories = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1]);
+
+    if (!categories.length) {
+      breakdown.innerHTML = `<div class="empty-state">No expenses recorded for ${escapeHtml(formatMonth(month))}.</div>`;
+      return;
+    }
+
+    categories.forEach(([category, total]) => {
+      const percentage = spent > 0 ? Math.round((total / spent) * 100) : 0;
+
+      const row = document.createElement("div");
+      row.className = "mb-3";
+
+      row.innerHTML = `
+        <div class="d-flex justify-content-between mb-1">
+          <span class="fw-semibold">${escapeHtml(category)}</span>
+          <span class="fw-bold">${money(total)} · ${percentage}%</span>
+        </div>
+        <div class="progress">
+          <div class="progress-bar" style="width:${percentage}%"></div>
+        </div>
+      `;
+
+      breakdown.appendChild(row);
+    });
+  }
+
+  function renderEntities() {
+    const container = document.getElementById("entityList");
+    container.innerHTML = "";
+
+    if (!entities.length) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="fw-bold mb-1">No expense entities</div>
+          <div>Create your first custom expense.</div>
+        </div>
+      `;
+      return;
+    }
+
+    entities.forEach(entity => {
+      const row = document.createElement("div");
+      row.className = "entity-row d-flex flex-wrap align-items-center justify-content-between gap-3 mb-2";
+
+      row.innerHTML = `
+        <div class="flex-grow-1">
+          <div class="d-flex align-items-center flex-wrap gap-2">
+            <span class="fw-bold">${escapeHtml(entity.name)}</span>
+            <span class="category-badge">${escapeHtml(entity.category)}</span>
+            ${entity.active
+              ? '<span class="badge text-bg-success">Active</span>'
+              : '<span class="badge text-bg-secondary">Inactive</span>'}
+          </div>
+          <div class="expense-meta mt-1">
+            ${entity.type === "fixed" ? "Fixed" : "Variable"} · Default ${money(entity.amount)}
+          </div>
+        </div>
+
+        <div class="entity-actions d-flex gap-2">
+          <button class="btn btn-outline-primary btn-sm edit-entity" data-id="${entity.id}" type="button">Edit</button>
+          <button class="btn btn-outline-danger btn-sm delete-entity" data-id="${entity.id}" type="button">Delete</button>
+        </div>
+      `;
+
+      container.appendChild(row);
+    });
+
+    container.querySelectorAll(".edit-entity").forEach(btn => {
+      btn.addEventListener("click", () => openEditEntity(btn.dataset.id));
+    });
+
+    container.querySelectorAll(".delete-entity").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.id;
+        if (!getEntity(id)) return;
+
+        entities = entities.filter(e => e.id !== id);
+        saveAll();
+        renderAll();
+      });
+    });
+
+    renderReminderSettings();
+  }
+
+  function openAddEntity() {
+    document.getElementById("entityForm").reset();
+    document.getElementById("entityId").value = "";
+    document.getElementById("entityModalTitle").textContent = "Add Expense Entity";
+    document.getElementById("entityActive").checked = true;
+    document.getElementById("entityReminderEnabled").checked = false;
+    document.getElementById("entityReminderDate").value = "";
+    document.getElementById("entityReminderTime").value = "20:00";
+    document.getElementById("entityType").value = "fixed";
+    renderCategorySelect("entityCategory", categories[0], true);
+    document.getElementById("newCategoryWrap").classList.add("d-none");
+    document.getElementById("newCategoryInput").value = "";
+    updateAmountHelp();
+    entityModal.show();
+  }
+
+  function openEditEntity(id) {
+    const entity = getEntity(id);
+    if (!entity) return;
+
+    document.getElementById("entityId").value = entity.id;
+    document.getElementById("entityName").value = entity.name;
+    document.getElementById("entityType").value = entity.type;
+    document.getElementById("entityAmount").value = entity.amount;
+    renderCategorySelect("entityCategory", entity.category, true);
+    document.getElementById("entityActive").checked = entity.active;
+    document.getElementById("entityReminderEnabled").checked = !!entity.reminderEnabled;
+    document.getElementById("entityReminderDate").value = entity.reminderDate || "";
+    document.getElementById("entityReminderTime").value = entity.reminderTime || "20:00";
+    document.getElementById("newCategoryWrap").classList.add("d-none");
+    document.getElementById("newCategoryInput").value = "";
+    document.getElementById("entityModalTitle").textContent = "Edit Expense Entity";
+
+    updateAmountHelp();
+    entityModal.show();
+  }
+
+  function deleteEntity(id) {
+    const entity = getEntity(id);
+    if (!entity) return;
+
+    const hasHistory = transactions.some(t => t.entityId === id);
+
+    const message = hasHistory
+      ? `Delete "${entity.name}" from your active expense list?\n\nIts previous transactions will NOT be deleted.`
+      : `Delete "${entity.name}"?`;
+
+    if (!confirm(message)) return;
+
+    entities = entities.filter(e => e.id !== id);
+    saveAll();
+    renderAll();
+  }
+
+  function updateAmountHelp() {
+    const type = document.getElementById("entityType").value;
+    document.getElementById("amountHelp").textContent =
+      type === "fixed"
+        ? "This amount will be recorded automatically when you tick the expense."
+        : "This is only a default amount. You can enter a different actual amount every day.";
+  }
+
+  function escapeHtml(value) {
+    return String(value)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+
+  function moneyNetForPerson(person){ return moneyRecords.filter(r=>r.person===person).reduce((s,r)=>s+(r.direction==='given'?Number(r.amount):-Number(r.amount)),0); }
+  function renderMoney(){
+    const given=moneyRecords.filter(r=>r.direction==='given').reduce((s,r)=>s+Number(r.amount||0),0), received=moneyRecords.filter(r=>r.direction==='received').reduce((s,r)=>s+Number(r.amount||0),0);
+    document.getElementById('moneyGivenTotal').textContent=money(given); document.getElementById('moneyReceivedTotal').textContent=money(received);
+    const net=given-received, netEl=document.getElementById('moneyNetTotal'); netEl.textContent=money(net); netEl.className='summary-value '+(net>=0?'money-positive':'money-negative');
+    const people=[...new Set(moneyRecords.map(r=>r.person).filter(Boolean))].sort((a,b)=>a.localeCompare(b)); const pf=document.getElementById('moneyPersonFilter'); const old=pf.value; pf.innerHTML='<option value="all">All people</option>'+people.map(p=>`<option>${escapeHtml(p)}</option>`).join(''); if(people.includes(old))pf.value=old;
+    const pb=document.getElementById('personBalances'); pb.innerHTML=people.length?people.map(p=>{const n=moneyNetForPerson(p);return `<div class="entity-row d-flex justify-content-between align-items-center gap-3 mb-2"><div><strong>${escapeHtml(p)}</strong><div class="expense-meta">${n>0?'They owe you':n<0?'You owe them':'Settled'}</div></div><strong class="${n>0?'money-positive':n<0?'money-negative':''}">${money(Math.abs(n))}</strong></div>`}).join(''):'<div class="empty-state">No person balances yet.</div>';
+    const q=(document.getElementById('moneySearch').value||'').toLowerCase(), dir=document.getElementById('moneyDirectionFilter').value, person=pf.value;
+    const rows=moneyRecords.slice().sort((a,b)=>b.date.localeCompare(a.date)).filter(r=>(dir==='all'||r.direction===dir)&&(person==='all'||r.person===person)&&((r.person+' '+(r.note||'')).toLowerCase().includes(q)));
+    document.getElementById('moneyHistory').innerHTML=rows.length?rows.map(r=>`<div class="history-item d-flex justify-content-between align-items-center gap-3"><div><strong>${escapeHtml(r.person)}</strong><div class="expense-meta">${escapeHtml(r.date)} · ${r.direction==='given'?'Given':'Received'}${r.note?' · '+escapeHtml(r.note):''}</div></div><div class="d-flex align-items-center gap-2"><strong class="${r.direction==='given'?'money-negative':'money-positive'}">${r.direction==='given'?'-':'+'}${money(r.amount).replace('-','')}</strong><button class="btn btn-sm btn-outline-primary edit-money" data-id="${r.id}">Edit</button><button class="btn btn-sm btn-outline-danger delete-money" data-id="${r.id}">Delete</button></div></div>`).join(''):'<div class="empty-state">No matching money records.</div>';
+    document.querySelectorAll('.edit-money').forEach(b=>b.onclick=()=>openMoneyEdit(b.dataset.id)); document.querySelectorAll('.delete-money').forEach(b=>b.onclick=()=>{moneyRecords=moneyRecords.filter(r=>r.id!==b.dataset.id);saveAll();renderMoney();});
+  }
+  function renderInsights(){
+    document.getElementById('savingsGoalInput').value=savingsGoal||''; document.getElementById('dailyLimitInput').value=dailyLimit||''; document.getElementById('savingsGoalDisplay').textContent=money(savingsGoal);
+    const spent=getTotalSpent(), budget=getBudget(), saved=Math.max(0,budget-spent); document.getElementById('savingsProgressText').textContent=savingsGoal?`${money(saved)} available after expenses · ${Math.min(100,Math.round(saved/savingsGoal*100))}% of goal`: 'Set a goal below.';
+    document.getElementById('dailyLimitDisplay').textContent=money(dailyLimit); const today=getTransactionsForDate(todayKey()).reduce((s,t)=>s+Number(t.amount||0),0); document.getElementById('dailyLimitStatus').textContent=dailyLimit?(today>dailyLimit?`Over limit by ${money(today-dailyLimit)}`:`${money(dailyLimit-today)} left today`):'Set your limit below.';
+    const days=new Set(getMonthTransactions(monthKey()).map(t=>t.date)).size, avg=days?spent/days:0; document.getElementById('avgDailySpend').textContent=money(avg); const ct={};getMonthTransactions(monthKey()).forEach(t=>ct[t.category||'Other']=(ct[t.category||'Other']||0)+Number(t.amount||0)); const top=Object.entries(ct).sort((a,b)=>b[1]-a[1])[0]; document.getElementById('topCategoryInsight').textContent=top?`Top category: ${top[0]} (${money(top[1])})`:'No data yet.';
+    document.getElementById('recurringList').innerHTML=recurringExpenses.length?recurringExpenses.map(r=>`<div class="entity-row d-flex justify-content-between align-items-center gap-3 mb-2"><div><strong>${escapeHtml(r.name)}</strong><div class="expense-meta">${money(r.amount)} · ${escapeHtml(r.category)} · Day ${r.day}</div></div><div class="d-flex gap-2"><button class="btn btn-sm btn-outline-primary edit-recurring" data-id="${r.id}">Edit</button><button class="btn btn-sm btn-outline-danger delete-recurring" data-id="${r.id}">Delete</button></div></div>`).join(''):'<div class="empty-state">No recurring expenses yet.</div>';
+    document.querySelectorAll('.edit-recurring').forEach(b=>b.onclick=()=>openRecurringEdit(b.dataset.id));document.querySelectorAll('.delete-recurring').forEach(b=>b.onclick=()=>{recurringExpenses=recurringExpenses.filter(r=>r.id!==b.dataset.id);saveAll();renderInsights();});
+    const insight=document.getElementById('insightCards'); insight.innerHTML=top?`<div class="summary-card"><strong>${escapeHtml(top[0])}</strong> is your highest spending category this month at <strong>${money(top[1])}</strong>. ${budget?`You have used ${Math.round(spent/budget*100)}% of your monthly budget.`:''}</div>`:'<div class="empty-state">Record some expenses to see insights.</div>';
+    const month=monthKey(), first=new Date(Number(month.slice(0,4)),Number(month.slice(5,7))-1,1), last=new Date(Number(month.slice(0,4)),Number(month.slice(5,7)),0), start=(first.getDay()+6)%7, cells=[]; for(let i=0;i<start;i++)cells.push('<div></div>'); for(let d=1;d<=last.getDate();d++){const key=month+'-'+String(d).padStart(2,'0'), total=getTransactionsForDate(key).reduce((s,t)=>s+Number(t.amount||0),0);cells.push(`<div class="calendar-cell ${total?'has-spend':''}"><strong>${d}</strong><div class="expense-meta">${total?money(total):'—'}</div></div>`);} document.getElementById('spendingCalendar').innerHTML='<div class="calendar-grid mb-2">'+['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(x=>`<div class="calendar-head">${x}</div>`).join('')+'</div><div class="calendar-grid">'+cells.join('')+'</div>';
+  }
+  function openMoneyEdit(id){const r=moneyRecords.find(x=>x.id===id);if(!r)return;document.getElementById('moneyId').value=r.id;document.getElementById('moneyDirection').value=r.direction;document.getElementById('moneyPerson').value=r.person;document.getElementById('moneyAmount').value=r.amount;document.getElementById('moneyDate').value=r.date;document.getElementById('moneyNote').value=r.note||'';document.getElementById('moneyModalTitle').textContent='Edit Money Record';moneyModal.show();}
+  function openRecurringEdit(id){const r=recurringExpenses.find(x=>x.id===id);if(!r)return;document.getElementById('recurringId').value=r.id;document.getElementById('recurringName').value=r.name;document.getElementById('recurringAmount').value=r.amount;renderCategorySelect('recurringCategory',r.category,false);document.getElementById('recurringDay').value=r.day;document.getElementById('recurringModalTitle').textContent='Edit Recurring Expense';recurringModal.show();}
+
+  function renderAll() {
+    renderDashboard();
+    renderToday();
+    renderHistory();
+    renderMonthly();
+    renderEntities();
+    renderMoney();
+    renderInsights();
+  }
+
+  // Tabs
+  document.querySelectorAll("#mainTabs [data-tab]").forEach(button => {
+    button.addEventListener("click", () => {
+      const tab = button.dataset.tab;
+
+      document.querySelectorAll("#mainTabs .nav-link").forEach(b => b.classList.remove("active"));
+      button.classList.add("active");
+
+      ["today", "history", "monthly", "money", "insights", "manage"].forEach(name => {
+        document.getElementById("tab-" + name).classList.toggle("d-none", name !== tab);
+      });
+
+      if (tab === "monthly") renderMonthly();
+    });
+  });
+
+  // Budget
+  document.getElementById("openBudgetBtn").addEventListener("click", () => {
+    document.getElementById("budgetInput").value = getBudget() || "";
+    budgetModal.show();
+  });
+
+  document.getElementById("budgetForm").addEventListener("submit", e => {
+    e.preventDefault();
+
+    const amount = Number(document.getElementById("budgetInput").value);
+
+    if (!Number.isFinite(amount) || amount < 0) {
+      alert("Enter a valid budget.");
+      return;
+    }
+
+    setBudget(monthKey(), amount);
+    budgetModal.hide();
+    renderAll();
+  });
+
+  // Entity
+  document.getElementById("addEntityBtn").addEventListener("click", openAddEntity);
+  document.getElementById("entityType").addEventListener("change", updateAmountHelp);
+
+  document.getElementById("entityCategory").addEventListener("change", () => {
+    const select = document.getElementById("entityCategory");
+    const wrap = document.getElementById("newCategoryWrap");
+    const input = document.getElementById("newCategoryInput");
+
+    if (select.value === "__add_new__") {
+      wrap.classList.remove("d-none");
+      input.focus();
+    } else {
+      wrap.classList.add("d-none");
+      input.value = "";
+    }
+  });
+
+  document.getElementById("entityForm").addEventListener("submit", e => {
+    e.preventDefault();
+
+    const id = document.getElementById("entityId").value.trim();
+    const name = document.getElementById("entityName").value.trim();
+    const type = document.getElementById("entityType").value;
+    const amount = Number(document.getElementById("entityAmount").value);
+    let category = document.getElementById("entityCategory").value;
+    if (category === "__add_new__") {
+      category = addCategoryIfNew(document.getElementById("newCategoryInput").value);
+      if (!category) {
+        alert("Please type a category name.");
+        document.getElementById("newCategoryInput").focus();
+        return;
+      }
+    } else {
+      category = addCategoryIfNew(category);
+    }
+
+    const active = document.getElementById("entityActive").checked;
+    const reminderEnabled = document.getElementById("entityReminderEnabled").checked;
+    const reminderDate = document.getElementById("entityReminderDate").value || "";
+    const reminderTime = document.getElementById("entityReminderTime").value || "20:00";
+
+    if (reminderEnabled && (!reminderDate || reminderDate < todayKey())) {
+      alert("Choose today or a future reminder date.");
+      return;
+    }
+
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(reminderTime)) {
+      alert("Please enter a valid reminder time.");
+      return;
+    }
+
+    if (!name || !Number.isFinite(amount) || amount < 0) {
+      alert("Please enter a valid name and amount.");
+      return;
+    }
+
+    if (id) {
+      const entity = getEntity(id);
+      if (!entity) return;
+
+      const oldName = entity.name;
+
+      entity.name = name;
+      entity.type = type;
+      entity.amount = Math.round(amount);
+      entity.category = category;
+      entity.active = active;
+      entity.reminderEnabled = reminderEnabled;
+      entity.reminderDate = reminderDate;
+      entity.reminderTime = reminderTime;
+
+      // Keep history exactly as it was.
+      // New transactions will use the new entity values.
+      if (oldName !== name) {
+        // No historical transaction is changed.
+      }
+    } else {
+      entities.push({
+        id: "entity_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8),
+        name,
+        type,
+        amount: Math.round(amount),
+        category,
+        active,
+        reminderEnabled,
+        reminderDate,
+        reminderTime
+      });
+    }
+
+    saveAll();
+    entityModal.hide();
+    renderAll();
+  });
+
+  // Add expense for any date, including missed previous days.
+  function openPastExpenseModal() {
+    const form = document.getElementById("pastExpenseForm");
+    delete form.dataset.editingId;
+    document.querySelector("#pastExpenseModal .modal-title").textContent = "Add Expense for Previous Date";
+
+    const dateInput = document.getElementById("pastExpenseDate");
+    const today = todayKey();
+    dateInput.value = today;
+    dateInput.max = today;
+
+    const entitySelect = document.getElementById("pastExpenseEntity");
+    entitySelect.innerHTML = "";
+
+    const allEntities = entities;
+    if (!allEntities.length) {
+      entitySelect.innerHTML = '<option value="">No expense entities available</option>';
+    } else {
+      allEntities.forEach(entity => {
+        const option = document.createElement("option");
+        option.value = entity.id;
+        option.textContent = entity.name + " · " + (entity.type === "variable" ? "Variable" : money(entity.amount));
+        entitySelect.appendChild(option);
+      });
+    }
+
+    renderCategorySelect("pastExpenseCategory", categories[0], true);
+
+    const first = allEntities[0];
+    if (first) {
+      entitySelect.value = first.id;
+      document.getElementById("pastExpenseCategory").value =
+        categories.includes(first.category) ? first.category : categories[0];
+      document.getElementById("pastExpenseAmount").value = first.amount || "";
+    }
+
+    updatePastExpenseDefaults();
+    pastExpenseModal.show();
+  }
+
+  function updatePastExpenseDefaults() {
+    const id = document.getElementById("pastExpenseEntity").value;
+    const entity = getEntity(id);
+    if (!entity) return;
+
+    const categorySelect = document.getElementById("pastExpenseCategory");
+    const currentCategory = entity.category || categories[0];
+    renderCategorySelect("pastExpenseCategory", currentCategory, true);
+
+    const amountInput = document.getElementById("pastExpenseAmount");
+    if (!amountInput.value || Number(amountInput.value) === 0) {
+      amountInput.value = entity.amount || "";
+    }
+  }
+
+  document.getElementById("pastExpenseCategory").addEventListener("change", () => {
+    const select = document.getElementById("pastExpenseCategory");
+    if (select.value !== "__add_new__") return;
+
+    const typed = prompt("Enter a new category name:");
+    const saved = addCategoryIfNew(typed);
+
+    if (saved) {
+      renderCategorySelect("pastExpenseCategory", saved, true);
+      document.getElementById("pastExpenseCategory").value = saved;
+    } else {
+      renderCategorySelect("pastExpenseCategory", categories[0], true);
+    }
+  });
+
+  document.getElementById("pastExpenseEntity").addEventListener("change", () => {
+    const entity = getEntity(document.getElementById("pastExpenseEntity").value);
+    if (!entity) return;
+
+    renderCategorySelect("pastExpenseCategory", entity.category, false);
+    document.getElementById("pastExpenseAmount").value = entity.amount || "";
+  });
+
+  document.getElementById("pastExpenseForm").addEventListener("submit", e => {
+    e.preventDefault();
+
+    const date = document.getElementById("pastExpenseDate").value;
+    const entity = getEntity(document.getElementById("pastExpenseEntity").value);
+    const category = addCategoryIfNew(document.getElementById("pastExpenseCategory").value);
+    const amount = Number(document.getElementById("pastExpenseAmount").value);
+
+    if (!date || date > todayKey()) {
+      alert("Please choose today or a previous date.");
+      return;
+    }
+
+    if (!entity || !category || !Number.isFinite(amount) || amount < 0) {
+      alert("Please enter valid expense details.");
+      return;
+    }
+
+    const editingId = e.target.dataset.editingId;
+
+    if (editingId) {
+      const tx = transactions.find(t => t.id === editingId);
+      if (tx) {
+        tx.date = date;
+        tx.entityId = entity.id;
+        tx.entityName = entity.name;
+        tx.category = category;
+        tx.amount = Math.round(amount);
+      }
+      delete e.target.dataset.editingId;
+    } else {
+      transactions.push({
+        id: "tx_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8),
+        date,
+        entityId: entity.id,
+        entityName: entity.name,
+        category,
+        amount: Math.round(amount),
+        createdAt: new Date().toISOString(),
+        manuallyAdded: true
+      });
+    }
+
+    saveAll();
+    pastExpenseModal.hide();
+    e.target.reset();
+    document.querySelector("#pastExpenseModal .modal-title").textContent = "Add Expense for Previous Date";
+    renderAll();
+
+    // If user added a past expense, show History automatically.
+    document.querySelectorAll("#mainTabs .nav-link").forEach(b => b.classList.remove("active"));
+    const historyTab = document.querySelector('#mainTabs [data-tab="history"]');
+    historyTab.classList.add("active");
+    ["today", "history", "monthly", "money", "insights", "manage"].forEach(name => {
+      document.getElementById("tab-" + name).classList.toggle("d-none", name !== "history");
+    });
+  });
+
+  // Money tracking
+  document.getElementById('addMoneyBtn').addEventListener('click',()=>{document.getElementById('moneyForm').reset();document.getElementById('moneyId').value='';document.getElementById('moneyDate').value=todayKey();document.getElementById('moneyModalTitle').textContent='Add Money Record';moneyModal.show();});
+  document.getElementById('moneyForm').addEventListener('submit',e=>{e.preventDefault();const id=document.getElementById('moneyId').value, rec={id:id||'money_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),direction:document.getElementById('moneyDirection').value,person:document.getElementById('moneyPerson').value.trim(),amount:Math.round(Number(document.getElementById('moneyAmount').value)),date:document.getElementById('moneyDate').value,note:document.getElementById('moneyNote').value.trim()};if(!rec.person||!Number.isFinite(rec.amount)||rec.amount<0||!rec.date){alert('Please enter valid money details.');return;}if(id){const i=moneyRecords.findIndex(x=>x.id===id);if(i>=0)moneyRecords[i]=rec;}else moneyRecords.push(rec);saveAll();moneyModal.hide();e.target.reset();renderMoney();});
+  ['moneySearch','moneyDirectionFilter','moneyPersonFilter'].forEach(id=>document.getElementById(id).addEventListener(id==='moneySearch'?'input':'change',renderMoney));
+  document.getElementById('clearMoneyFilters').addEventListener('click',()=>{document.getElementById('moneySearch').value='';document.getElementById('moneyDirectionFilter').value='all';document.getElementById('moneyPersonFilter').value='all';renderMoney();});
+  // Savings and daily limit
+  document.getElementById('saveSavingsBtn').addEventListener('click',()=>{savingsGoal=Math.max(0,Math.round(Number(document.getElementById('savingsGoalInput').value)||0));saveAll();renderInsights();});
+  document.getElementById('saveDailyLimitBtn').addEventListener('click',()=>{dailyLimit=Math.max(0,Math.round(Number(document.getElementById('dailyLimitInput').value)||0));saveAll();renderInsights();});
+  // Recurring expenses
+  document.getElementById('addRecurringBtn').addEventListener('click',()=>{document.getElementById('recurringForm').reset();document.getElementById('recurringId').value='';document.getElementById('recurringDay').value=1;renderCategorySelect('recurringCategory',categories[0],false);document.getElementById('recurringModalTitle').textContent='Add Recurring Expense';recurringModal.show();});
+  document.getElementById('recurringForm').addEventListener('submit',e=>{e.preventDefault();const id=document.getElementById('recurringId').value,r={id:id||'rec_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),name:document.getElementById('recurringName').value.trim(),amount:Math.round(Number(document.getElementById('recurringAmount').value)),category:addCategoryIfNew(document.getElementById('recurringCategory').value),day:Math.min(31,Math.max(1,Math.round(Number(document.getElementById('recurringDay').value)||1)))};if(!r.name||!Number.isFinite(r.amount)||r.amount<0){alert('Please enter valid recurring expense details.');return;}if(id){const i=recurringExpenses.findIndex(x=>x.id===id);if(i>=0)recurringExpenses[i]=r;}else recurringExpenses.push(r);saveAll();recurringModal.hide();renderInsights();});
+  // Variable expense
+  document.getElementById("variableForm").addEventListener("submit", e => {
+    e.preventDefault();
+
+    const entity = getEntity(variableEntityId);
+    const amount = Number(document.getElementById("variableAmount").value);
+
+    if (!entity || !Number.isFinite(amount) || amount < 0) {
+      alert("Enter a valid amount.");
+      return;
+    }
+
+    addTodayTransaction(entity, amount);
+    variableEntityId = null;
+    variableModal.hide();
+  });
+
+  document.getElementById("cancelVariableBtn").addEventListener("click", () => {
+    variableEntityId = null;
+    variableModal.hide();
+    renderToday();
+  });
+
+  document.getElementById("variableModal").addEventListener("hidden.bs.modal", () => {
+    if (variableEntityId) {
+      variableEntityId = null;
+      renderToday();
+    }
+  });
+
+  // Reset today's transactions
+  document.getElementById("resetTodayBtn").addEventListener("click", () => {
+    const today = todayKey();
+    const before = transactions.length;
+    transactions = transactions.filter(t => t.date !== today);
+
+    if (transactions.length !== before) {
+      saveAll();
+      renderAll();
+    } else {
+      renderToday();
+    }
+  });
+
+  document.getElementById("addPastExpenseBtn").addEventListener("click", openPastExpenseModal);
+
+  document.getElementById("monthSelector").addEventListener("change", renderMonthly);
+
+  function xmlEscape(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&apos;");
+  }
+
+  // Minimal ZIP writer used to create a real .xlsx file with no CDN/library.
+  function crc32(bytes) {
+    let table = crc32.table;
+    if (!table) {
+      table = crc32.table = new Uint32Array(256);
+      for (let n = 0; n < 256; n++) {
+        let c = n;
+        for (let k = 0; k < 8; k++) c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1);
+        table[n] = c >>> 0;
+      }
+    }
+    let c = 0xffffffff;
+    for (let i = 0; i < bytes.length; i++) c = table[(c ^ bytes[i]) & 255] ^ (c >>> 8);
+    return (c ^ 0xffffffff) >>> 0;
+  }
+
+  function u16(n) { return [n & 255, (n >>> 8) & 255]; }
+  function u32(n) { return [n & 255, (n >>> 8) & 255, (n >>> 16) & 255, (n >>> 24) & 255]; }
+  function concatBytes(parts) {
+    const total = parts.reduce((n, p) => n + p.length, 0);
+    const out = new Uint8Array(total);
+    let offset = 0;
+    parts.forEach(p => { out.set(p, offset); offset += p.length; });
+    return out;
+  }
+
+  function zipStore(files) {
+    const encoder = new TextEncoder();
+    const locals = [], centrals = [];
+    let offset = 0;
+
+    files.forEach(file => {
+      const name = encoder.encode(file.name);
+      const data = encoder.encode(file.content);
+      const crc = crc32(data);
+      const local = new Uint8Array(concatBytes([
+        Uint8Array.from([0x50,0x4b,0x03,0x04]),
+        Uint8Array.from(u16(20)), Uint8Array.from(u16(0)), Uint8Array.from(u16(0)),
+        Uint8Array.from(u16(0)), Uint8Array.from(u16(0)), Uint8Array.from(u32(crc)),
+        Uint8Array.from(u32(data.length)), Uint8Array.from(u32(data.length)),
+        Uint8Array.from(u16(name.length)), Uint8Array.from(u16(0)), name, data
+      ]));
+      locals.push(local);
+
+      const central = concatBytes([
+        Uint8Array.from([0x50,0x4b,0x01,0x02]),
+        Uint8Array.from(u16(20)), Uint8Array.from(u16(20)), Uint8Array.from(u16(0)), Uint8Array.from(u16(0)),
+        Uint8Array.from(u16(0)), Uint8Array.from(u16(0)), Uint8Array.from(u32(crc)),
+        Uint8Array.from(u32(data.length)), Uint8Array.from(u32(data.length)),
+        Uint8Array.from(u16(name.length)), Uint8Array.from(u16(0)), Uint8Array.from(u16(0)),
+        Uint8Array.from(u16(0)), Uint8Array.from(u16(0)), Uint8Array.from(u32(0)), Uint8Array.from(u32(offset)), name
+      ]);
+      centrals.push(central);
+      offset += local.length;
+    });
+
+    const centralSize = centrals.reduce((n, p) => n + p.length, 0);
+    const centralOffset = offset;
+    const eocd = concatBytes([
+      Uint8Array.from([0x50,0x4b,0x05,0x06]),
+      Uint8Array.from(u16(0)), Uint8Array.from(u16(0)), Uint8Array.from(u16(files.length)), Uint8Array.from(u16(files.length)),
+      Uint8Array.from(u32(centralSize)), Uint8Array.from(u32(centralOffset)), Uint8Array.from(u16(0))
+    ]);
+    return concatBytes([...locals, ...centrals, eocd]);
+  }
+
+  function xlsxCell(value, type = "inlineStr") {
+    if (type === "n") return `<c><v>${Number(value) || 0}</v></c>`;
+    return `<c t="inlineStr"><is><t>${xmlEscape(value)}</t></is></c>`;
+  }
+
+  function xlsxSheet(rows) {
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+      `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>` +
+      rows.map(row => `<row>${row.map(c => Array.isArray(c) ? xlsxCell(c[0], c[1]) : xlsxCell(c)).join("")}</row>`).join("") +
+      `</sheetData></worksheet>`;
+  }
+
+  function downloadMonthExcel() {
+    const month = document.getElementById("monthSelector").value || monthKey();
+    const monthTransactions = getMonthTransactions(month).slice().sort((a, b) => a.date.localeCompare(b.date));
+    const budget = getBudget(month);
+    const spent = monthTransactions.reduce((sum, t) => sum + Number(t.amount || 0), 0);
+
+    const transactionRows = [["Date", "Expense", "Category", "Amount"], ...monthTransactions.map(t => [
+      t.date, t.entityName, t.category || "Other", [Number(t.amount || 0), "n"]
+    ])];
+
+    const categoryTotals = {};
+    monthTransactions.forEach(t => {
+      const category = t.category || "Other";
+      categoryTotals[category] = (categoryTotals[category] || 0) + Number(t.amount || 0);
+    });
+    const categoryRows = [["Category", "Total Spent"], ...Object.entries(categoryTotals).sort((a,b) => b[1]-a[1]).map(([c,a]) => [c, [a, "n"]])];
+    const summaryRows = [["Month", "Budget", "Total Spent", "Remaining", "Transactions"], [month, [budget,"n"], [spent,"n"], [budget-spent,"n"], [monthTransactions.length,"n"]]];
+
+    const files = [
+      {name:"[Content_Types].xml", content:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet3.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>`},
+      {name:"_rels/.rels", content:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`},
+      {name:"xl/workbook.xml", content:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Transactions" sheetId="1" r:id="rId1"/><sheet name="Summary" sheetId="2" r:id="rId2"/><sheet name="Categories" sheetId="3" r:id="rId3"/></sheets></workbook>`},
+      {name:"xl/_rels/workbook.xml.rels", content:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet3.xml"/></Relationships>`},
+      {name:"xl/worksheets/sheet1.xml", content:xlsxSheet(transactionRows)},
+      {name:"xl/worksheets/sheet2.xml", content:xlsxSheet(summaryRows)},
+      {name:"xl/worksheets/sheet3.xml", content:xlsxSheet(categoryRows)}
+    ];
+
+    const bytes = zipStore(files);
+    const blob = new Blob([bytes], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "ExpenseFlow_" + month + ".xlsx";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  document.getElementById("downloadMonthExcelBtn").addEventListener("click", downloadMonthExcel);
+
+  document.getElementById("enableNotificationsBtn").addEventListener("click", requestNotificationPermission);
+
+  document.getElementById("dailyReminderEnabled").addEventListener("change", e => {
+    reminders.dailyEnabled = e.target.checked;
+    saveAll();
+    scheduleReminders();
+  });
+
+  document.getElementById("saveDailyReminderBtn").addEventListener("click", () => {
+    const dailyTime = document.getElementById("dailyReminderTime");
+    const dailyEnabled = document.getElementById("dailyReminderEnabled");
+    const value = dailyTime.value;
+
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(value)) {
+      dailyTime.value = reminders.dailyTime || "21:00";
+      return;
+    }
+
+    reminders.dailyTime = value;
+    reminders.dailyEnabled = !!dailyEnabled.checked;
+    saveAll();
+    scheduleReminders();
+
+    const btn = document.getElementById("saveDailyReminderBtn");
+    const original = btn.textContent;
+    btn.textContent = "Saved ✓";
+    setTimeout(() => { btn.textContent = original; }, 1400);
+  });
+
+  document.getElementById("dailyReminderTime").addEventListener("change", e => {
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(e.target.value)) {
+      e.target.value = reminders.dailyTime || "21:00";
+    }
+  });
+
+  // Start
+  renderAll();
+  scheduleReminders();
+
+})();
+</script>
+</body>
+</html>
